@@ -7,7 +7,7 @@ setuptools.setup(
     name="class_config",
     version="0.0.1",
     author="Tanix",
-    description="Class as config",
+    description="Class as config.",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/TanixLu/class_config",
