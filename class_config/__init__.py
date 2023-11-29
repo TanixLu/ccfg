@@ -3,41 +3,56 @@ from pathlib import Path
 
 
 class ClassConfigMeta(type):
-    def __new__(cls, name, bases, attrs):
-        # 创建新类
-        new_class = super(ClassConfigMeta, cls).__new__(cls, name, bases, attrs)
+    _depth = 0
 
-        # 遍历字典，查找内部类并确保它们也继承自ClassConfigBase
+    def __new__(cls, name, bases, attrs, **kwargs):
+        ClassConfigMeta._depth += 1
+
+        if ClassConfigMeta._depth == 1 and name != 'ClassConfigBase':
+            # _depth为1，代表这是最顶层的Config，因此设置_outermost为True
+            attrs['_outermost'] = True
+
+        # 将kwargs加入attrs
+        attrs.update(kwargs)
+
+        # 遍历attrs，查找inner class并确保它们也继承自ClassConfigBase
+        # 这样在使用ClassConfigBase的时候，inner class就不用显式地继承自ClassConfigBase了
         for attr_name, attr_value in attrs.items():
             if not attr_name.startswith('_'):
                 if isinstance(attr_value, type):
                     # 创建一个继承自ClassConfigBase和原始内部类的新类
                     inner_class_attrs = {k: v for k, v in vars(attr_value).items()}
                     new_inner_class = type(attr_name, (ClassConfigBase, attr_value), inner_class_attrs)
-                    # 将新类设置为内部类
-                    setattr(new_class, attr_name, new_inner_class)
+                    # 将原始内部类替换为新类
+                    attrs[attr_name] = new_inner_class
 
-        return new_class
+        # 如果attrs中没有name，则将name设置为类名（最顶层的Config除外）
+        if ClassConfigMeta._depth != 1 and 'name' not in attrs:
+            attrs['name'] = name
 
-    def __getattr__(self, item):
-        return self
+        ClassConfigMeta._depth -= 1
 
-    def __bool__(self):
+        return super().__new__(cls, name, bases, attrs)
+
+    def __getattr__(cls, item):
+        return ClassConfigBase
+
+    def __bool__(cls):
         return False
 
-    def __eq__(self, other):
+    def __eq__(cls, other):
         return False
 
-    def __ne__(self, other):
+    def __ne__(cls, other):
         return False
 
 
 class ClassConfigBase(metaclass=ClassConfigMeta):
-    name = None
+    name = None  # 总是存在
     value = None
 
     @classmethod
-    def inner_classes(cls):
+    def inner_configs(cls):
         for entry in dir(cls):
             if not entry.startswith('_'):
                 inner_class = getattr(cls, entry)
@@ -52,15 +67,15 @@ class ClassConfigBase(metaclass=ClassConfigMeta):
             return {cls.name: cls.value}
 
         # 否则，递归调用所有其内部类的to_json方法，合成一个大的json
-        temp_json = {}
-        for inner_class in cls.inner_classes():
-            temp_json.update(inner_class.to_dict())
+        res_dict = {}
+        for inner_config in cls.inner_configs():
+            res_dict.update(inner_config.to_dict())
 
-        # 如果cls有name，则给返回的结果嵌套一层dict，否则不嵌套
-        if cls.name is not None:
-            return {cls.name: temp_json}
+        # 如果cls在最外层，且name为None，不显示name
+        if hasattr(cls, '_outermost') and cls._outermost and cls.name is None:
+            return res_dict
         else:
-            return temp_json
+            return {cls.name: res_dict}
 
     @classmethod
     def from_dict(cls, j):
@@ -76,10 +91,10 @@ class ClassConfigBase(metaclass=ClassConfigMeta):
                 j = j[cls.name]
 
         # 然后对于其所有内部类，递归调用from_json方法
-        for inner_class in cls.inner_classes():
-            if inner_class.name is not None:
-                if inner_class.name in j:
-                    inner_class.from_dict(j)
+        for inner_config in cls.inner_configs():
+            if inner_config.name is not None:
+                if inner_config.name in j:
+                    inner_config.from_dict(j)
 
     @classmethod
     def write_json(cls, file_path):

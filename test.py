@@ -16,7 +16,7 @@ def test_empty_config():
     assert EmptyConfig.to_dict() == {}
 
 
-def assert_config_json_eq(cls, value):
+def assert_config_dict_eq(cls, value):
     assert cls.to_dict() == value
     cls.from_dict(value)
     assert cls.to_dict() == value
@@ -29,14 +29,35 @@ def test_config_name():
     class NamedConfig(ClassConfigBase):
         name = ''
 
-    assert_config_json_eq(NoNameConfig, {})
-    assert_config_json_eq(NamedConfig, {'': {}})
+    assert_config_dict_eq(NoNameConfig, {})
+    assert_config_dict_eq(NamedConfig, {'': {}})
 
 
 def test_nested_config():
-    class NestedConfig(ClassConfigBase):
+    class Config(ClassConfigBase):
+        class NestedConfig:
+            class NestedNestedConfig:
+                value = 1
 
-        class Config1:
-            value = 1
+        class NestedConfig2:
+            value = 2
 
-    print(NestedConfig.to_dict())
+    assert_config_dict_eq(Config, {'NestedConfig': {'NestedNestedConfig': 1}, 'NestedConfig2': 2})
+
+
+def test_nest_with_name():
+    class Config(ClassConfigBase):
+        name = 'config'
+
+        class NestedConfig:
+            name = 'nested'
+
+            class NestedNestedConfig:
+                name = 'nested_nested'
+                value = 1
+
+        class NestedConfig2:
+            name = 'nested2'
+            value = 2
+
+    assert_config_dict_eq(Config, {'config': {'nested': {'nested_nested': 1}, 'nested2': 2}})
