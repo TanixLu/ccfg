@@ -10,6 +10,7 @@ class ClassConfigMeta(type):
 
         if ClassConfigMeta._depth == 1 and name != 'ClassConfigBase':
             # _depth为1，代表这是最顶层的Config，因此设置_outermost为True
+            # name != 'ClassConfigBase'，代表这不是ClassConfigBase本身
             attrs['_outermost'] = True
 
         # 将kwargs加入attrs
@@ -17,6 +18,7 @@ class ClassConfigMeta(type):
 
         # 遍历attrs，查找inner class并确保它们也继承自ClassConfigBase
         # 这样在使用ClassConfigBase的时候，inner class就不用显式地继承自ClassConfigBase了
+        has_inner_class = False
         for attr_name, attr_value in attrs.items():
             if not attr_name.startswith('_'):
                 if isinstance(attr_value, type):
@@ -25,6 +27,11 @@ class ClassConfigMeta(type):
                     new_inner_class = type(attr_name, (ClassConfigBase, attr_value), inner_class_attrs)
                     # 将原始内部类替换为新类
                     attrs[attr_name] = new_inner_class
+                    has_inner_class = True
+
+        # inner class和value不能同时存在
+        if has_inner_class and 'value' in attrs and attrs['value'] is not None:
+            raise ValueError('Inner class and value cannot both exist')
 
         # 如果attrs中没有name，则将name设置为类名（最顶层的Config除外）
         if ClassConfigMeta._depth != 1 and 'name' not in attrs:
