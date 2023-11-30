@@ -18,7 +18,7 @@ class ClassConfigMeta(type):
 
         # 遍历attrs，查找inner class并确保它们也继承自ClassConfigBase
         # 这样在使用ClassConfigBase的时候，inner class就不用显式地继承自ClassConfigBase了
-        has_inner_class = False
+        inner_class_names = set()
         for attr_name, attr_value in attrs.items():
             if not attr_name.startswith('_'):
                 if isinstance(attr_value, type):
@@ -27,10 +27,14 @@ class ClassConfigMeta(type):
                     new_inner_class = type(attr_name, (ClassConfigBase, attr_value), inner_class_attrs)
                     # 将原始内部类替换为新类
                     attrs[attr_name] = new_inner_class
-                    has_inner_class = True
+                    # 记录内部类的名字，内部类的名字不能重复
+                    inner_class_name = attr_value.name if hasattr(attr_value, 'name') else attr_name
+                    if inner_class_name in inner_class_names:
+                        raise ValueError(f'Inner class name "{inner_class_name}" is duplicated')
+                    inner_class_names.add(inner_class_name)
 
         # inner class和value不能同时存在
-        if has_inner_class and 'value' in attrs and attrs['value'] is not None:
+        if inner_class_names and 'value' in attrs and attrs['value'] is not None:
             raise ValueError('Inner class and value cannot both exist')
 
         # 如果attrs中没有name，则将name设置为类名（最顶层的Config除外）
@@ -55,11 +59,40 @@ class ClassConfigMeta(type):
 
 
 class ClassConfigBase(metaclass=ClassConfigMeta):
-    name = None  # 总是存在
+    """
+    class Config(ClassConfigBase):
+        class ParallelNum:
+            name = '并行数量'
+
+            value = 2
+
+        class SubConfig:
+            name = '子配置'
+
+            class Speed:
+                name = '速度'
+
+                value = 3
+
+            class Complex:  # 默认name为类名
+                value = {'4': ['5', {'6': 7}]}
+
+    assert Config.to_dict() == {'并行数量': 2, '子配置': {'速度': 3, 'Complex': {'4': ['5', {'6': 7}]}}}
+
+    Attributes:
+        name: 总是存在，默认为类名。只有最顶层的Config为None时，才不显示name。
+        value: 总是存在，但是当有inner config时，value必须为None。
+    """
+
+    name = None
     value = None
 
     @classmethod
     def inner_configs(cls):
+        """
+        返回所有内部继承自ClassConfigBase的类，由于ClassConfigMeta会自动处理，
+        因此这些类不一定显式继承自ClassConfigBase。
+        """
         for entry in dir(cls):
             if not entry.startswith('_'):
                 inner_class = getattr(cls, entry)
@@ -69,6 +102,8 @@ class ClassConfigBase(metaclass=ClassConfigMeta):
 
     @classmethod
     def to_dict(cls):
+        """ 将配置转换为dict """
+
         # 当cls有value的时候，递归终止
         if cls.value is not None:
             return {cls.name: cls.value}
@@ -86,6 +121,8 @@ class ClassConfigBase(metaclass=ClassConfigMeta):
 
     @classmethod
     def from_dict(cls, j):
+        """ 将dict转换为配置 """
+
         # 当cls有value的时候，递归终止
         if cls.value is not None:
             if cls.name in j:

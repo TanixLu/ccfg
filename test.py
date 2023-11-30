@@ -70,7 +70,7 @@ def test_inner_config():
     assert_config_dict_eq(Config, {'InnerConfig': {'InnerInnerConfig': 1}, 'InnerConfig2': 2})
 
 
-def test_nest_with_name():
+def test_inner_with_name():
     """ 内部配置类和显式name混用 """
 
     class Config(ClassConfigBase):
@@ -87,3 +87,68 @@ def test_nest_with_name():
             value = 2
 
     assert_config_dict_eq(Config, {'config': {'asdf': {'InnerInnerConfig': 1}, 'inner2': 2}})
+
+
+def test_duplicate_name():
+    """ 不能有重复的name """
+    try:
+        class _Config(ClassConfigBase):
+            class InnerConfig:
+                name = 'asdf'
+
+            class InnerConfig2:
+                name = 'asdf'
+
+        assert False
+    except ValueError:
+        pass
+
+    try:
+        class _Config(ClassConfigBase):
+            class InnerConfig:
+                pass
+
+            class InnerConfig2:
+                name = 'InnerConfig'
+
+        assert False
+    except ValueError:
+        pass
+
+
+def test_none_name_value():
+    """
+    name和value都可以为None
+
+    最顶层的Config的name为None时，to_dict的结果不会有最外层的name
+    内部的Config的name为None时，
+    """
+
+
+
+def test_complex_value():
+    """ value可以是任意类型 """
+
+    class Config(ClassConfigBase):
+        class ParallelNum:
+            name = '并行数量'
+            value = 2
+
+        class SubConfig:
+            name = '子配置'
+
+            class Speed:
+                name = '速度'
+                value = 3
+
+            class Complex:
+                value = {'4': ['5', {'6': 7}]}
+
+    d = {
+        '并行数量': 2,
+        '子配置': {
+            '速度': 3,
+            'Complex': {'4': ['5', {'6': 7}]}
+        }
+    }
+    assert_config_dict_eq(Config, d)
