@@ -1,25 +1,5 @@
 from class_config import ClassConfigBase, ClassConfigMeta
-
-
-def mess_value(cls: ClassConfigMeta):
-    """ 将ClassConfigBase的所有value都置为随机数 """
-    import random
-    config_list: list[ClassConfigMeta] = [cls]
-    while config_list:
-        config = config_list.pop()
-        if config.is_leaf():
-            old_value = config.value
-            while config.value == old_value:
-                config.value = random.random()
-        config_list.extend(config.inner_configs())
-
-
-def assert_config_dict_eq(cls: ClassConfigMeta, value):
-    """ cls和某个dict等价 """
-    assert cls.to_dict() == value
-    mess_value(cls)
-    cls.from_dict(value)
-    assert cls.to_dict() == value
+from utils import assert_config_dict_eq
 
 
 def test_empty_config():
@@ -130,31 +110,7 @@ def test_duplicate_name():
         pass
 
 
-def test_complex_value():
-    """ value可以是任意类型 """
-
-    class Config(ClassConfigBase):
-        class ParallelNum:
-            name = '并行数量'
-            value = 2
-
-        class SubConfig:
-            name = '子配置'
-
-            class Speed:
-                name = '速度'
-                value = 3
-
-            class Complex:
-                value = {'4': ['5', {'6': 7}]}
-
-    d = {
-        'Config': {
-            '并行数量': 2,
-            '子配置': {
-                '速度': 3,
-                'Complex': {'4': ['5', {'6': 7}]}
-            }
-        }
-    }
-    assert_config_dict_eq(Config, d)
+def test_complex_config():
+    """ 测试复杂配置 """
+    from utils import ComplexConfig, complex_dict
+    assert_config_dict_eq(ComplexConfig, complex_dict)

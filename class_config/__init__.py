@@ -61,8 +61,8 @@ class ClassConfigBase(metaclass=ClassConfigMeta):
     assert Config.to_dict() == {'Config': {'并行数量': 2, '子配置': {'速度': 3, 'Complex': {'4': ['5', {'6': 7}]}}}}
 
     Attributes:
-        name: 默认为类名。
-        value: 总是存在，但是当有inner config时，优先使用inner config。
+        name: 对应dict的键，默认为类名。
+        value: 对应dict的值，有inner config时，优先使用inner config，此时值为所有inner config键值对组成的dict。
     """
 
     name = None
@@ -101,15 +101,93 @@ class ClassConfigBase(metaclass=ClassConfigMeta):
         return {cls.name: dict_value}
 
     @classmethod
-    def from_dict(cls, j):
+    def from_dict(cls, dct: dict):
         """ 将dict转换为配置 """
-        if cls.name in j:
-            j = j[cls.name]
+        if cls.name in dct:
+            dct = dct[cls.name]
             if cls.is_leaf():
                 # 如果是叶子节点，递归终止，直接设置值
-                cls.value = j
-            elif isinstance(j, dict):
+                cls.value = dct
+            elif isinstance(dct, dict):
                 # 对于非叶子节点，遍历inner config，进行递归调用
                 for inner_config in cls.inner_configs():
-                    if inner_config.name in j:
-                        inner_config.from_dict(j)
+                    if inner_config.name in dct:
+                        inner_config.from_dict(dct)
+
+    @classmethod
+    def dumps(cls, form: str, **kwargs):
+        """ 将配置转换为str，支持的格式包括json, toml, yaml，默认为json """
+        dct = cls.to_dict()
+        if form == 'toml':
+            import toml
+            return toml.dumps(dct, **kwargs)
+        elif form == 'yaml' or form == 'yml':
+            import yaml
+            return yaml.dump(dct, **kwargs)
+        else:
+            import json
+            # 设置json的默认dumps参数，使默认输出格式更美观
+            kwargs.setdefault('ensure_ascii', False)
+            kwargs.setdefault('indent', 2)
+            return json.dumps(dct, **kwargs)
+
+    @classmethod
+    def loads(cls, s: str, form: str, **kwargs):
+        """ 将str转换为配置，支持的格式包括json, toml, yaml，默认为json """
+        if form == 'toml':
+            import toml
+            dct = toml.loads(s, **kwargs)
+        elif form == 'yaml' or form == 'yml':
+            import yaml
+            dct = yaml.safe_load(s)
+        else:
+            import json
+            dct = json.loads(s, **kwargs)
+
+        cls.from_dict(dct)
+
+    @classmethod
+    def determine_form_path(cls, form: str = None, path: str = None):
+        """ 确定格式以及路径 """
+        # 先确定格式，优先级：path参数 > form参数 > 类path参数，默认为json
+        if path is not None:
+            form = path.rsplit('.', 1)[-1]
+        elif form is None:
+            if cls.path is not None and isinstance(cls.path, str):
+                form = cls.path.rsplit('.', 1)[-1]
+            else:
+                form = 'json'
+
+        # 确定文件名称，优先级：path参数 > 类path参数 > 类名
+        if path is not None:
+            file_name = path.rsplit('.', 1)[0]
+        else:
+            if cls.path is not None and isinstance(cls.path, str):
+                file_name = cls.path.rsplit('.', 1)[0]
+            else:
+                file_name = cls.name
+
+        # 文件名称和后缀组合得到path
+        # 注意yaml格式的默认后缀为yml
+        if form == 'yaml':
+            ext = 'yml'
+        else:
+            ext = form
+        path = file_name + '.' + ext
+
+        return form, path
+
+    @classmethod
+    def load(cls, form: str = None, path: str = None, **kwargs):
+        """ 从文件加载配置，支持的格式包括json, toml, yaml，默认为json """
+        form, path = cls.determine_form_path(form, path)
+        with open(path, 'r', encoding='utf-8') as f:
+            cls.loads(f.read(), form, **kwargs)
+
+    @classmethod
+    def dump(cls, form: str = None, path: str = None, **kwargs):
+        """ 将配置保存到文件，支持的格式包括json, toml, yaml，默认为json """
+        form, path = cls.determine_form_path(form, path)
+
+        with open(path, 'w', encoding='utf-8') as f:
+            f.write(cls.dumps(form, **kwargs))
