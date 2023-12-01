@@ -20,10 +20,7 @@ def test_determine_form_path():
 
 def test_dumps_loads():
     """ 测试dumps后loads，是否得到原来的配置 """
-
-    all_forms = ['json', 'toml', 'yaml']
-
-    for form in all_forms:
+    for form in ['json', 'toml', 'yaml']:
         s = ComplexConfig.dumps(form)
         mess_value(ComplexConfig)
         ComplexConfig.loads(s, form)

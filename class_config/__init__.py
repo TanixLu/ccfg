@@ -153,7 +153,7 @@ class ClassConfigBase(metaclass=ClassConfigMeta):
         if path is not None:
             form = path.rsplit('.', 1)[-1]
         elif form is None:
-            if cls.path is not None and isinstance(cls.path, str):
+            if isinstance(cls.path, str):
                 form = cls.path.rsplit('.', 1)[-1]
             else:
                 form = 'json'
@@ -162,7 +162,7 @@ class ClassConfigBase(metaclass=ClassConfigMeta):
         if path is not None:
             file_name = path.rsplit('.', 1)[0]
         else:
-            if cls.path is not None and isinstance(cls.path, str):
+            if isinstance(cls.path, str):
                 file_name = cls.path.rsplit('.', 1)[0]
             else:
                 file_name = cls.name
