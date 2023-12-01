@@ -4,10 +4,10 @@ from class_config import ClassConfigBase, ClassConfigMeta
 def mess_value(cls: ClassConfigMeta):
     """ 将ClassConfigBase的所有value都置为随机数 """
     import random
-    config_list = [cls]
+    config_list: list[ClassConfigMeta] = [cls]
     while config_list:
         config = config_list.pop()
-        if config.value is not None:
+        if config.is_leaf():
             old_value = config.value
             while config.value == old_value:
                 config.value = random.random()
@@ -24,36 +24,25 @@ def assert_config_dict_eq(cls: ClassConfigMeta, value):
 
 def test_empty_config():
     """
-    空的config和{}等价，并且访问任意层不存在的属性，不会报错，
+    空的config和{'ConfigName': None}等价，并且访问任意层不存在的属性，不会报错，
     而是返回一个name和value都为None的ClassConfigBase
     """
 
     class EmptyConfig(ClassConfigBase):
         pass
 
-    assert_config_dict_eq(EmptyConfig, {})
+    assert EmptyConfig.name == 'EmptyConfig'
+    assert EmptyConfig.value is None
+
+    assert_config_dict_eq(EmptyConfig, {'EmptyConfig': None})
 
     def assert_none_meta(cls):
         assert isinstance(cls, ClassConfigMeta)
         assert cls.name is None
         assert cls.value is None
 
-    assert_none_meta(EmptyConfig)
     assert_none_meta(EmptyConfig.asdf)
     assert_none_meta(EmptyConfig.asdf.asdf)
-
-
-def test_config_name():
-    """ 如果最外层不设置name，那么to_dict的结果不会有最外层的name """
-
-    class NoNameConfig(ClassConfigBase):
-        pass
-
-    class NamedConfig(ClassConfigBase):
-        name = ''
-
-    assert_config_dict_eq(NoNameConfig, {})
-    assert_config_dict_eq(NamedConfig, {'': {}})
 
 
 def test_inner_config():
@@ -67,7 +56,7 @@ def test_inner_config():
         class InnerConfig2:
             value = 2
 
-    assert_config_dict_eq(Config, {'InnerConfig': {'InnerInnerConfig': 1}, 'InnerConfig2': 2})
+    assert_config_dict_eq(Config, {'Config': {'InnerConfig': {'InnerInnerConfig': 1}, 'InnerConfig2': 2}})
 
 
 def test_inner_with_name():
@@ -89,9 +78,20 @@ def test_inner_with_name():
     assert_config_dict_eq(Config, {'config': {'asdf': {'InnerInnerConfig': 1}, 'inner2': 2}})
 
 
+def test_none_name():
+    """ name可以是None """
+
+    class NoneNameConfig(ClassConfigBase):
+        name = None
+        value = 3
+
+    assert_config_dict_eq(NoneNameConfig, {None: 3})
+
+
 def test_duplicate_name():
     """ 不能有重复的name """
     try:
+        # 两个都设置name
         class _Config(ClassConfigBase):
             class InnerConfig:
                 name = 'asdf'
@@ -104,6 +104,7 @@ def test_duplicate_name():
         pass
 
     try:
+        # 一个设置name，一个不设置
         class _Config(ClassConfigBase):
             class InnerConfig:
                 pass
@@ -115,15 +116,18 @@ def test_duplicate_name():
     except ValueError:
         pass
 
+    try:
+        # 两个都设置name为None
+        class _Config(ClassConfigBase):
+            class InnerConfig:
+                name = None
 
-def test_none_name_value():
-    """
-    name和value都可以为None
+            class InnerConfig2:
+                name = None
 
-    最顶层的Config的name为None时，to_dict的结果不会有最外层的name
-    内部的Config的name为None时，
-    """
-
+        assert False
+    except ValueError:
+        pass
 
 
 def test_complex_value():
@@ -145,10 +149,12 @@ def test_complex_value():
                 value = {'4': ['5', {'6': 7}]}
 
     d = {
-        '并行数量': 2,
-        '子配置': {
-            '速度': 3,
-            'Complex': {'4': ['5', {'6': 7}]}
+        'Config': {
+            '并行数量': 2,
+            '子配置': {
+                '速度': 3,
+                'Complex': {'4': ['5', {'6': 7}]}
+            }
         }
     }
     assert_config_dict_eq(Config, d)

@@ -1,3 +1,3 @@
 # class_config
 
-Class as config.
+Python class as config.

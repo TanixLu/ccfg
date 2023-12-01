@@ -1,18 +1,5 @@
-import json
-from pathlib import Path
-
-
 class ClassConfigMeta(type):
-    _depth = 0
-
     def __new__(cls, name, bases, attrs, **kwargs):
-        ClassConfigMeta._depth += 1
-
-        if ClassConfigMeta._depth == 1 and name != 'ClassConfigBase':
-            # _depth为1，代表这是最顶层的Config，因此设置_outermost为True
-            # name != 'ClassConfigBase'，代表这不是ClassConfigBase本身
-            attrs['_outermost'] = True
-
         # 将kwargs加入attrs
         attrs.update(kwargs)
 
@@ -33,15 +20,9 @@ class ClassConfigMeta(type):
                         raise ValueError(f'Inner class name "{inner_class_name}" is duplicated')
                     inner_class_names.add(inner_class_name)
 
-        # inner class和value不能同时存在
-        if inner_class_names and 'value' in attrs and attrs['value'] is not None:
-            raise ValueError('Inner class and value cannot both exist')
-
-        # 如果attrs中没有name，则将name设置为类名（最顶层的Config除外）
-        if ClassConfigMeta._depth != 1 and 'name' not in attrs:
+        # 如果attrs中没有name，那么设置name为类名
+        if 'name' not in attrs:
             attrs['name'] = name
-
-        ClassConfigMeta._depth -= 1
 
         return super().__new__(cls, name, bases, attrs)
 
@@ -77,11 +58,11 @@ class ClassConfigBase(metaclass=ClassConfigMeta):
             class Complex:  # 默认name为类名
                 value = {'4': ['5', {'6': 7}]}
 
-    assert Config.to_dict() == {'并行数量': 2, '子配置': {'速度': 3, 'Complex': {'4': ['5', {'6': 7}]}}}
+    assert Config.to_dict() == {'Config': {'并行数量': 2, '子配置': {'速度': 3, 'Complex': {'4': ['5', {'6': 7}]}}}}
 
     Attributes:
-        name: 总是存在，默认为类名。只有最顶层的Config为None时，才不显示name。
-        value: 总是存在，但是当有inner config时，value必须为None。
+        name: 默认为类名。
+        value: 总是存在，但是当有inner config时，优先使用inner config。
     """
 
     name = None
@@ -101,55 +82,34 @@ class ClassConfigBase(metaclass=ClassConfigMeta):
                     yield inner_class
 
     @classmethod
+    def is_leaf(cls):
+        """ 没有inner config的是叶子配置 """
+        return all(False for _ in cls.inner_configs())
+
+    @classmethod
     def to_dict(cls):
         """ 将配置转换为dict """
-
-        # 当cls有value的时候，递归终止
-        if cls.value is not None:
+        # 如果是叶子节点，直接返回value
+        if cls.is_leaf():
             return {cls.name: cls.value}
 
-        # 否则，递归调用所有其内部类的to_json方法，合成一个大的json
-        res_dict = {}
+        # 否则，递归调用to_dict方法
+        dict_value = {}
         for inner_config in cls.inner_configs():
-            res_dict.update(inner_config.to_dict())
+            dict_value.update(inner_config.to_dict())
 
-        # 如果cls在最外层，且name为None，不显示name
-        if hasattr(cls, '_outermost') and cls._outermost and cls.name is None:
-            return res_dict
-        else:
-            return {cls.name: res_dict}
+        return {cls.name: dict_value}
 
     @classmethod
     def from_dict(cls, j):
         """ 将dict转换为配置 """
-
-        # 当cls有value的时候，递归终止
-        if cls.value is not None:
-            if cls.name in j:
-                cls.value = j[cls.name]
-                return
-
-        # 否则，尝试去掉一层j的嵌套
-        if cls.name is not None:
-            if cls.name in j:
-                j = j[cls.name]
-
-        # 然后对于其所有内部类，递归调用from_json方法
-        for inner_config in cls.inner_configs():
-            if inner_config.name is not None:
-                if inner_config.name in j:
-                    inner_config.from_dict(j)
-
-    @classmethod
-    def write_json(cls, file_path):
-        with open(file_path, 'w', encoding='utf8') as f:
-            json.dump(cls.to_dict(), f, ensure_ascii=False, indent=2)
-
-    @classmethod
-    def read_json(cls, file_path):
-        path = Path(file_path)
-        if path.exists() and path.stat().st_size > 0:
-            with open(path, encoding='utf8') as f:
-                cls.from_dict(json.load(f))
-        else:
-            cls.write_json(file_path)
+        if cls.name in j:
+            j = j[cls.name]
+            if cls.is_leaf():
+                # 如果是叶子节点，递归终止，直接设置值
+                cls.value = j
+            elif isinstance(j, dict):
+                # 对于非叶子节点，遍历inner config，进行递归调用
+                for inner_config in cls.inner_configs():
+                    if inner_config.name in j:
+                        inner_config.from_dict(j)
