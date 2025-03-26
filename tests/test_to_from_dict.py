@@ -11,10 +11,10 @@ def test_empty_config():
     class EmptyConfig(ClassConfigBase):
         pass
 
-    assert EmptyConfig.name == 'EmptyConfig'
+    assert EmptyConfig.name == "EmptyConfig"
     assert EmptyConfig.value is None
 
-    assert_config_dict_eq(EmptyConfig, {'EmptyConfig': None})
+    assert_config_dict_eq(EmptyConfig, {"EmptyConfig": None})
 
     def assert_none_meta(cls):
         assert isinstance(cls, ClassConfigMeta)
@@ -26,7 +26,7 @@ def test_empty_config():
 
 
 def test_inner_config():
-    """ 内部配置类不用显式继承自ClassConfigBase，因为ClassConfigMeta会自动处理 """
+    """内部配置类不用显式继承自ClassConfigBase，因为ClassConfigMeta会自动处理"""
 
     class Config(ClassConfigBase):
         class InnerConfig:
@@ -36,30 +36,34 @@ def test_inner_config():
         class InnerConfig2:
             value = 2
 
-    assert_config_dict_eq(Config, {'Config': {'InnerConfig': {'InnerInnerConfig': 1}, 'InnerConfig2': 2}})
+    assert_config_dict_eq(
+        Config, {"Config": {"InnerConfig": {"InnerInnerConfig": 1}, "InnerConfig2": 2}}
+    )
 
 
 def test_inner_with_name():
-    """ 内部配置类和显式name混用 """
+    """内部配置类和显式name混用"""
 
     class Config(ClassConfigBase):
-        name = 'config'
+        name = "config"
 
         class InnerConfig:
-            name = 'asdf'
+            name = "asdf"
 
             class InnerInnerConfig:
                 value = 1
 
         class InnerConfig2:
-            name = 'inner2'
+            name = "inner2"
             value = 2
 
-    assert_config_dict_eq(Config, {'config': {'asdf': {'InnerInnerConfig': 1}, 'inner2': 2}})
+    assert_config_dict_eq(
+        Config, {"config": {"asdf": {"InnerInnerConfig": 1}, "inner2": 2}}
+    )
 
 
 def test_none_name():
-    """ name可以是None """
+    """name可以是None"""
 
     class NoneNameConfig(ClassConfigBase):
         name = None
@@ -69,15 +73,15 @@ def test_none_name():
 
 
 def test_duplicate_name():
-    """ 不能有重复的name """
+    """不能有重复的name"""
     try:
         # 两个都设置name
         class _Config(ClassConfigBase):
             class InnerConfig:
-                name = 'asdf'
+                name = "asdf"
 
             class InnerConfig2:
-                name = 'asdf'
+                name = "asdf"
 
         assert False
     except ValueError:
@@ -90,7 +94,7 @@ def test_duplicate_name():
                 pass
 
             class InnerConfig2:
-                name = 'InnerConfig'
+                name = "InnerConfig"
 
         assert False
     except ValueError:
@@ -111,6 +115,7 @@ def test_duplicate_name():
 
 
 def test_complex_config():
-    """ 测试复杂配置 """
+    """测试复杂配置"""
     from utils import ComplexConfig, complex_dict
+
     assert_config_dict_eq(ComplexConfig, complex_dict)
