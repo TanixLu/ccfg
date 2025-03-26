@@ -1,3 +1,6 @@
+from typing import Optional, Any, Tuple
+
+
 class ClassConfigMeta(type):
     def __new__(cls, name, bases, attrs, **kwargs):
         # 将kwargs加入attrs
@@ -71,8 +74,8 @@ class ClassConfigBase(metaclass=ClassConfigMeta):
         value: 对应dict的值，有inner config时，优先使用inner config，此时值为所有inner config键值对组成的dict。
     """
 
-    name = None
-    value = None
+    name: str = None  # type: ignore
+    value: Any = None  # type: ignore
 
     @classmethod
     def inner_configs(cls):
@@ -161,7 +164,9 @@ class ClassConfigBase(metaclass=ClassConfigMeta):
         cls.from_dict(dct)
 
     @classmethod
-    def determine_form_path(cls, form: str = None, path: str = None):
+    def determine_form_path(
+        cls, form: Optional[str] = None, path: Optional[str] = None
+    ) -> Tuple[str, str]:
         """确定格式以及路径"""
         # 先确定格式，优先级：path参数 > form参数 > 类path参数，默认为json
         if path is not None:
@@ -192,16 +197,16 @@ class ClassConfigBase(metaclass=ClassConfigMeta):
         return form, path
 
     @classmethod
-    def load(cls, form: str = None, path: str = None, **kwargs):
+    def load(cls, form: Optional[str] = None, path: Optional[str] = None, **kwargs):
         """从文件加载配置，支持的格式包括json, toml, yaml，默认为json"""
-        form, path = cls.determine_form_path(form, path)
-        with open(path, "r", encoding="utf-8") as f:
-            cls.loads(f.read(), form, **kwargs)
+        final_form, final_path = cls.determine_form_path(form, path)
+        with open(final_path, "r", encoding="utf-8") as f:
+            cls.loads(f.read(), final_form, **kwargs)
 
     @classmethod
-    def dump(cls, form: str = None, path: str = None, **kwargs):
+    def dump(cls, form: Optional[str] = None, path: Optional[str] = None, **kwargs):
         """将配置保存到文件，支持的格式包括json, toml, yaml，默认为json"""
-        form, path = cls.determine_form_path(form, path)
+        final_form, final_path = cls.determine_form_path(form, path)
 
-        with open(path, "w", encoding="utf-8") as f:
-            f.write(cls.dumps(form, **kwargs))
+        with open(final_path, "w", encoding="utf-8") as f:
+            f.write(cls.dumps(final_form, **kwargs))

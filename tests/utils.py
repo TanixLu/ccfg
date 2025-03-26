@@ -1,11 +1,11 @@
-from class_config import ClassConfigBase, ClassConfigMeta
+from class_config import ClassConfigBase
 
 
-def mess_value(cls: ClassConfigMeta):
+def mess_value(cls: ClassConfigBase):
     """将ClassConfigBase的所有value都置为随机数"""
     import random
 
-    config_list: list[ClassConfigMeta] = [cls]
+    config_list: list[ClassConfigBase] = [cls]
     while config_list:
         config = config_list.pop()
         if config.is_leaf():
@@ -15,7 +15,7 @@ def mess_value(cls: ClassConfigMeta):
         config_list.extend(config.inner_configs())
 
 
-def assert_config_dict_eq(cls: ClassConfigMeta, dct: dict):
+def assert_config_dict_eq(cls: ClassConfigBase, dct: dict):
     """cls和某个dict等价"""
     assert cls.to_dict() == dct
     mess_value(cls)
