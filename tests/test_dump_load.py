@@ -3,9 +3,9 @@ from utils import ComplexConfig, complex_dict, mess_value, assert_config_dict_eq
 
 
 def test_determine_form_path():
-    """测试确定格式以及路径的优先级是否正确"""
+    """Test if the priority of determining format and path is correct"""
 
-    # 优先级：path参数 > form参数 > 类path参数，默认为json
+    # Priority: path parameter > form parameter > class path parameter, default is json
     class PathConfig(ClassConfigBase):
         path = "config.json"
 
@@ -22,7 +22,7 @@ def test_determine_form_path():
 
 
 def test_dumps_loads():
-    """测试dumps后loads，是否得到原来的配置"""
+    """Test if dumps followed by loads returns the original configuration"""
     for form in ["json", "toml", "yaml"]:
         s = ComplexConfig.dumps(form)
         mess_value(ComplexConfig)

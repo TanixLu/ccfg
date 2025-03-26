@@ -3,23 +3,23 @@ from typing import Optional, Any, Tuple
 
 class ClassConfigMeta(type):
     def __new__(cls, name, bases, attrs, **kwargs):
-        # 将kwargs加入attrs
+        # Add kwargs to attrs
         attrs.update(kwargs)
 
-        # 遍历attrs，查找inner class并确保它们也继承自ClassConfigBase
-        # 这样在使用ClassConfigBase的时候，inner class就不用显式地继承自ClassConfigBase了
+        # Iterate through attrs, find inner classes and ensure they also inherit from ClassConfigBase
+        # This way when using ClassConfigBase, inner classes don't need to explicitly inherit from ClassConfigBase
         inner_class_names = set()
         for attr_name, attr_value in attrs.items():
             if not attr_name.startswith("_"):
                 if isinstance(attr_value, type):
-                    # 创建一个继承自ClassConfigBase和原始内部类的新类
+                    # Create a new class that inherits from ClassConfigBase and the original inner class
                     inner_class_attrs = {k: v for k, v in vars(attr_value).items()}
                     new_inner_class = type(
                         attr_name, (ClassConfigBase, attr_value), inner_class_attrs
                     )
-                    # 将原始内部类替换为新类
+                    # Replace the original inner class with the new class
                     attrs[attr_name] = new_inner_class
-                    # 记录内部类的名字，内部类的名字不能重复
+                    # Record the inner class name, inner class names cannot be duplicated
                     inner_class_name = (
                         attr_value.name if hasattr(attr_value, "name") else attr_name
                     )
@@ -29,7 +29,7 @@ class ClassConfigMeta(type):
                         )
                     inner_class_names.add(inner_class_name)
 
-        # 如果attrs中没有name，那么设置name为类名
+        # If there's no name in attrs, set name to the class name
         if "name" not in attrs:
             attrs["name"] = name
 
@@ -52,26 +52,26 @@ class ClassConfigBase(metaclass=ClassConfigMeta):
     """
     class Config(ClassConfigBase):
         class ParallelNum:
-            name = '并行数量'
+            name = 'Parallel Count'
 
             value = 2
 
         class SubConfig:
-            name = '子配置'
+            name = 'Sub Configuration'
 
             class Speed:
-                name = '速度'
+                name = 'Speed'
 
                 value = 3
 
-            class Complex:  # 默认name为类名
+            class Complex:  # The default name is the class name
                 value = {'4': ['5', {'6': 7}]}
 
-    assert Config.to_dict() == {'Config': {'并行数量': 2, '子配置': {'速度': 3, 'Complex': {'4': ['5', {'6': 7}]}}}}
+    assert Config.to_dict() == {'Config': {'Parallel Count': 2, 'Sub Configuration': {'Speed': 3, 'Complex': {'4': ['5', {'6': 7}]}}}}
 
     Attributes:
-        name: 对应dict的键，默认为类名。
-        value: 对应dict的值，有inner config时，优先使用inner config，此时值为所有inner config键值对组成的dict。
+        name: Corresponds to the dict key, defaults to class name.
+        value: Corresponds to the dict value. When there are inner configs, they take precedence, and the value becomes a dict composed of all inner config key-value pairs.
     """
 
     name: str = None  # type: ignore
@@ -80,13 +80,13 @@ class ClassConfigBase(metaclass=ClassConfigMeta):
     @classmethod
     def inner_configs(cls):
         """
-        返回所有内部继承自ClassConfigBase的类，由于ClassConfigMeta会自动处理，
-        因此这些类不一定显式继承自ClassConfigBase。
+        Return all internal classes that inherit from ClassConfigBase. Since ClassConfigMeta handles this automatically,
+        these classes may not explicitly inherit from ClassConfigBase.
         """
         for entry in dir(cls):
             if not entry.startswith("_"):
                 inner_class = getattr(cls, entry)
-                # isinstance(inner_class, type)判断是否是类，等价于inspect.isclass(inner_class)
+                # isinstance(inner_class, type) checks if it's a class, equivalent to inspect.isclass(inner_class)
                 if isinstance(inner_class, type) and issubclass(
                     inner_class, ClassConfigBase
                 ):
@@ -94,17 +94,17 @@ class ClassConfigBase(metaclass=ClassConfigMeta):
 
     @classmethod
     def is_leaf(cls):
-        """没有inner config的是叶子配置"""
+        """A leaf configuration is one without inner configs"""
         return all(False for _ in cls.inner_configs())
 
     @classmethod
     def to_dict(cls):
-        """将配置转换为dict"""
-        # 如果是叶子节点，直接返回value
+        """Convert the configuration to dict"""
+        # If it's a leaf node, return value directly
         if cls.is_leaf():
             return {cls.name: cls.value}
 
-        # 否则，递归调用to_dict方法
+        # Otherwise, recursively call the to_dict method
         dict_value = {}
         for inner_config in cls.inner_configs():
             dict_value.update(inner_config.to_dict())
@@ -113,21 +113,21 @@ class ClassConfigBase(metaclass=ClassConfigMeta):
 
     @classmethod
     def from_dict(cls, dct: dict):
-        """将dict转换为配置"""
+        """Convert dict to configuration"""
         if cls.name in dct:
             dct = dct[cls.name]
             if cls.is_leaf():
-                # 如果是叶子节点，递归终止，直接设置值
+                # If it's a leaf node, terminate recursion and set the value directly
                 cls.value = dct
             elif isinstance(dct, dict):
-                # 对于非叶子节点，遍历inner config，进行递归调用
+                # For non-leaf nodes, iterate through inner configs and make recursive calls
                 for inner_config in cls.inner_configs():
                     if inner_config.name in dct:
                         inner_config.from_dict(dct)
 
     @classmethod
     def dumps(cls, form: str, **kwargs):
-        """将配置转换为str，支持的格式包括json, toml, yaml，默认为json"""
+        """Convert configuration to str, supported formats include json, toml, yaml, default is json"""
         dct = cls.to_dict()
         if form == "toml":
             import toml
@@ -140,14 +140,14 @@ class ClassConfigBase(metaclass=ClassConfigMeta):
         else:
             import json
 
-            # 设置json的默认dumps参数，使默认输出格式更美观
+            # Set default json dumps parameters to make the output format more readable
             kwargs.setdefault("ensure_ascii", False)
             kwargs.setdefault("indent", 2)
             return json.dumps(dct, **kwargs)
 
     @classmethod
     def loads(cls, s: str, form: str, **kwargs):
-        """将str转换为配置，支持的格式包括json, toml, yaml，默认为json"""
+        """Convert str to configuration, supported formats include json, toml, yaml, default is json"""
         if form == "toml":
             import toml
 
@@ -167,8 +167,8 @@ class ClassConfigBase(metaclass=ClassConfigMeta):
     def determine_form_path(
         cls, form: Optional[str] = None, path: Optional[str] = None
     ) -> Tuple[str, str]:
-        """确定格式以及路径"""
-        # 先确定格式，优先级：path参数 > form参数 > 类path参数，默认为json
+        """Determine format and path"""
+        # First determine the format, priority: path parameter > form parameter > class path parameter, default is json
         if path is not None:
             form = path.rsplit(".", 1)[-1]
         elif form is None:
@@ -177,7 +177,7 @@ class ClassConfigBase(metaclass=ClassConfigMeta):
             else:
                 form = "json"
 
-        # 确定文件名称，优先级：path参数 > 类path参数 > 类名
+        # Determine file name, priority: path parameter > class path parameter > class name
         if path is not None:
             file_name = path.rsplit(".", 1)[0]
         else:
@@ -186,8 +186,8 @@ class ClassConfigBase(metaclass=ClassConfigMeta):
             else:
                 file_name = cls.name
 
-        # 文件名称和后缀组合得到path
-        # 注意yaml格式的默认后缀为yml
+        # Combine file name and extension to get the path
+        # Note that the default extension for yaml format is yml
         if form == "yaml":
             ext = "yml"
         else:
@@ -198,14 +198,14 @@ class ClassConfigBase(metaclass=ClassConfigMeta):
 
     @classmethod
     def load(cls, form: Optional[str] = None, path: Optional[str] = None, **kwargs):
-        """从文件加载配置，支持的格式包括json, toml, yaml，默认为json"""
+        """Load configuration from file, supported formats include json, toml, yaml, default is json"""
         final_form, final_path = cls.determine_form_path(form, path)
         with open(final_path, "r", encoding="utf-8") as f:
             cls.loads(f.read(), final_form, **kwargs)
 
     @classmethod
     def dump(cls, form: Optional[str] = None, path: Optional[str] = None, **kwargs):
-        """将配置保存到文件，支持的格式包括json, toml, yaml，默认为json"""
+        """Save configuration to file, supported formats include json, toml, yaml, default is json"""
         final_form, final_path = cls.determine_form_path(form, path)
 
         with open(final_path, "w", encoding="utf-8") as f:

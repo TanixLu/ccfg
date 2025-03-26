@@ -4,8 +4,9 @@ from utils import assert_config_dict_eq
 
 def test_empty_config():
     """
-    空的config和{'ConfigName': None}等价，并且访问任意层不存在的属性，不会报错，
-    而是返回一个name和value都为None的ClassConfigBase
+    An empty config is equivalent to {'ConfigName': None}, and accessing any non-existent attribute
+    at any level will not raise an error, but rather return a ClassConfigBase with name and value
+    both set to None
     """
 
     class EmptyConfig(ClassConfigBase):
@@ -26,7 +27,7 @@ def test_empty_config():
 
 
 def test_inner_config():
-    """内部配置类不用显式继承自ClassConfigBase，因为ClassConfigMeta会自动处理"""
+    """Inner configuration classes don't need to explicitly inherit from ClassConfigBase because ClassConfigMeta handles it automatically"""
 
     class Config(ClassConfigBase):
         class InnerConfig:
@@ -42,7 +43,7 @@ def test_inner_config():
 
 
 def test_inner_with_name():
-    """内部配置类和显式name混用"""
+    """Mix of inner configuration classes and explicit name"""
 
     class Config(ClassConfigBase):
         name = "config"
@@ -63,7 +64,7 @@ def test_inner_with_name():
 
 
 def test_none_name():
-    """name可以是None"""
+    """name can be None"""
 
     class NoneNameConfig(ClassConfigBase):
         name = None
@@ -73,9 +74,9 @@ def test_none_name():
 
 
 def test_duplicate_name():
-    """不能有重复的name"""
+    """Cannot have duplicate names"""
     try:
-        # 两个都设置name
+        # Both set the same name
         class _Config(ClassConfigBase):
             class InnerConfig:
                 name = "asdf"
@@ -88,7 +89,7 @@ def test_duplicate_name():
         pass
 
     try:
-        # 一个设置name，一个不设置
+        # One sets name, one uses default
         class _Config(ClassConfigBase):
             class InnerConfig:
                 pass
@@ -101,7 +102,7 @@ def test_duplicate_name():
         pass
 
     try:
-        # 两个都设置name为None
+        # Both set name to None
         class _Config(ClassConfigBase):
             class InnerConfig:
                 name = None
@@ -115,7 +116,7 @@ def test_duplicate_name():
 
 
 def test_complex_config():
-    """测试复杂配置"""
+    """Test complex configuration"""
     from utils import ComplexConfig, complex_dict
 
     assert_config_dict_eq(ComplexConfig, complex_dict)

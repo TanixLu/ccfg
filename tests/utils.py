@@ -2,7 +2,7 @@ from class_config import ClassConfigBase
 
 
 def mess_value(cls: ClassConfigBase):
-    """将ClassConfigBase的所有value都置为随机数"""
+    """Set all values of ClassConfigBase to random numbers"""
     import random
 
     config_list: list[ClassConfigBase] = [cls]
@@ -16,7 +16,7 @@ def mess_value(cls: ClassConfigBase):
 
 
 def assert_config_dict_eq(cls: ClassConfigBase, dct: dict):
-    """cls和某个dict等价"""
+    """Verify that cls is equivalent to a specified dict"""
     assert cls.to_dict() == dct
     mess_value(cls)
     cls.from_dict(dct)
@@ -25,14 +25,14 @@ def assert_config_dict_eq(cls: ClassConfigBase, dct: dict):
 
 class ComplexConfig(ClassConfigBase):
     class ParallelNum:
-        name = "并行数量"
+        name = "Parallel Count"
         value = 2
 
     class SubConfig:
-        name = "子配置"
+        name = "Sub Configuration"
 
         class Speed:
-            name = "速度"
+            name = "Speed"
             value = 3
 
         class Complex:
@@ -41,7 +41,7 @@ class ComplexConfig(ClassConfigBase):
 
 complex_dict = {
     "ComplexConfig": {
-        "并行数量": 2,
-        "子配置": {"速度": 3, "Complex": {"a": [{"b": 4}, {"5": "6"}]}},
+        "Parallel Count": 2,
+        "Sub Configuration": {"Speed": 3, "Complex": {"a": [{"b": 4}, {"5": "6"}]}},
     }
 }
