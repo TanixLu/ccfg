@@ -17,6 +17,12 @@ A Python library for managing hierarchical configurations using a class-based ap
 pip install ccfg
 ```
 
+### Optional Dependencies
+
+For additional serialization format support:
+- For TOML support: `pip install toml`
+- For YAML support: `pip install pyyaml`
+
 ## Usage Example
 
 Below is a comprehensive example demonstrating the main features:
