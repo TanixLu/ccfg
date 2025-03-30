@@ -8,11 +8,10 @@ version = "0.0.3"
 authors = [{ name = "Tanix", email = "tanixlu@foxmail.com" }]
 description = "A Python library for managing hierarchical configurations using a class-based approach."
 readme = "README.md"
-license = { text = "MIT" }
+license ="MIT"
 keywords = ["config", "class", "pydantic", "json"]
 classifiers = [
     "Programming Language :: Python :: 3",
-    "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
 ]
 requires-python = ">=3.6"
