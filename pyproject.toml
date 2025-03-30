@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "ccfg"
-version = "0.0.3"
+version = "0.0.4"
 authors = [{ name = "Tanix", email = "tanixlu@foxmail.com" }]
 description = "A Python library for managing hierarchical configurations using a class-based approach."
 readme = "README.md"

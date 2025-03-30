@@ -1,4 +1,6 @@
+import os
 from typing import Optional, Any, Tuple
+from pathlib import Path
 
 
 class CcfgMeta(type):
@@ -195,16 +197,24 @@ class CCFG(metaclass=CcfgMeta):
         return form, path
 
     @classmethod
-    def load(cls, form: Optional[str] = None, path: Optional[str] = None, **kwargs):
+    def load(
+        cls, form: Optional[str] = None, path: Optional[str] = None, **kwargs
+    ) -> bool:
         """Load configuration from file, supported formats include json, toml, yaml, default is json"""
         final_form, final_path = cls.determine_form_path(form, path)
-        with open(final_path, "r", encoding="utf-8") as f:
-            cls.loads(f.read(), final_form, **kwargs)
+        if os.path.exists(final_path):
+            with open(final_path, "r", encoding="utf-8") as f:
+                cls.loads(f.read(), final_form, **kwargs)
+            return True
+        else:
+            return False
 
     @classmethod
     def dump(cls, form: Optional[str] = None, path: Optional[str] = None, **kwargs):
         """Save configuration to file, supported formats include json, toml, yaml, default is json"""
         final_form, final_path = cls.determine_form_path(form, path)
+
+        Path(final_path).parent.mkdir(parents=True, exist_ok=True)
 
         with open(final_path, "w", encoding="utf-8") as f:
             f.write(cls.dumps(final_form, **kwargs))
