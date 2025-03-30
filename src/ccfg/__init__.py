@@ -1,21 +1,21 @@
 from typing import Optional, Any, Tuple
 
 
-class ClassConfigMeta(type):
+class CcfgMeta(type):
     def __new__(cls, name, bases, attrs, **kwargs):
         # Add kwargs to attrs
         attrs.update(kwargs)
 
-        # Iterate through attrs, find inner classes and ensure they also inherit from ClassConfigBase
-        # This way when using ClassConfigBase, inner classes don't need to explicitly inherit from ClassConfigBase
+        # Iterate through attrs, find inner classes and ensure they also inherit from CCFG
+        # This way when using CCFG, inner classes don't need to explicitly inherit from CCFG
         inner_class_names = set()
         for attr_name, attr_value in attrs.items():
             if not attr_name.startswith("_"):
                 if isinstance(attr_value, type):
-                    # Create a new class that inherits from ClassConfigBase and the original inner class
+                    # Create a new class that inherits from CCFG and the original inner class
                     inner_class_attrs = {k: v for k, v in vars(attr_value).items()}
                     new_inner_class = type(
-                        attr_name, (ClassConfigBase, attr_value), inner_class_attrs
+                        attr_name, (CCFG, attr_value), inner_class_attrs
                     )
                     # Replace the original inner class with the new class
                     attrs[attr_name] = new_inner_class
@@ -36,7 +36,7 @@ class ClassConfigMeta(type):
         return super().__new__(cls, name, bases, attrs)
 
     def __getattr__(cls, item):
-        return ClassConfigBase
+        return CCFG
 
     def __bool__(cls):
         return False
@@ -48,9 +48,9 @@ class ClassConfigMeta(type):
         return False
 
 
-class ClassConfigBase(metaclass=ClassConfigMeta):
+class CCFG(metaclass=CcfgMeta):
     """
-    class Config(ClassConfigBase):
+    class Config(CCFG):
         class ParallelNum:
             name = 'Parallel Count'
 
@@ -80,16 +80,14 @@ class ClassConfigBase(metaclass=ClassConfigMeta):
     @classmethod
     def inner_configs(cls):
         """
-        Return all internal classes that inherit from ClassConfigBase. Since ClassConfigMeta handles this automatically,
-        these classes may not explicitly inherit from ClassConfigBase.
+        Return all internal classes that inherit from CCFG. Since CcfgMeta handles this automatically,
+        these classes may not explicitly inherit from CCFG.
         """
         for entry in dir(cls):
             if not entry.startswith("_"):
                 inner_class = getattr(cls, entry)
                 # isinstance(inner_class, type) checks if it's a class, equivalent to inspect.isclass(inner_class)
-                if isinstance(inner_class, type) and issubclass(
-                    inner_class, ClassConfigBase
-                ):
+                if isinstance(inner_class, type) and issubclass(inner_class, CCFG):
                     yield inner_class
 
     @classmethod

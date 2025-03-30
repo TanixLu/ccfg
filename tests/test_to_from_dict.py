@@ -1,15 +1,15 @@
-from class_config import ClassConfigBase, ClassConfigMeta
+from src.ccfg import CCFG, CcfgMeta
 from utils import assert_config_dict_eq
 
 
 def test_empty_config():
     """
     An empty config is equivalent to {'ConfigName': None}, and accessing any non-existent attribute
-    at any level will not raise an error, but rather return a ClassConfigBase with name and value
+    at any level will not raise an error, but rather return a CCFG with name and value
     both set to None
     """
 
-    class EmptyConfig(ClassConfigBase):
+    class EmptyConfig(CCFG):
         pass
 
     assert EmptyConfig.name == "EmptyConfig"
@@ -18,7 +18,7 @@ def test_empty_config():
     assert_config_dict_eq(EmptyConfig, {"EmptyConfig": None})
 
     def assert_none_meta(cls):
-        assert isinstance(cls, ClassConfigMeta)
+        assert isinstance(cls, CcfgMeta)
         assert cls.name is None
         assert cls.value is None
 
@@ -27,9 +27,9 @@ def test_empty_config():
 
 
 def test_inner_config():
-    """Inner configuration classes don't need to explicitly inherit from ClassConfigBase because ClassConfigMeta handles it automatically"""
+    """Inner configuration classes don't need to explicitly inherit from CCFG because CcfgMeta handles it automatically"""
 
-    class Config(ClassConfigBase):
+    class Config(CCFG):
         class InnerConfig:
             class InnerInnerConfig:
                 value = 1
@@ -45,7 +45,7 @@ def test_inner_config():
 def test_inner_with_name():
     """Mix of inner configuration classes and explicit name"""
 
-    class Config(ClassConfigBase):
+    class Config(CCFG):
         name = "config"
 
         class InnerConfig:
@@ -66,7 +66,7 @@ def test_inner_with_name():
 def test_none_name():
     """name can be None"""
 
-    class NoneNameConfig(ClassConfigBase):
+    class NoneNameConfig(CCFG):
         name = None
         value = 3
 
@@ -77,7 +77,7 @@ def test_duplicate_name():
     """Cannot have duplicate names"""
     try:
         # Both set the same name
-        class _Config(ClassConfigBase):
+        class _Config(CCFG):
             class InnerConfig:
                 name = "asdf"
 
@@ -90,7 +90,7 @@ def test_duplicate_name():
 
     try:
         # One sets name, one uses default
-        class _Config(ClassConfigBase):
+        class _Config(CCFG):
             class InnerConfig:
                 pass
 
@@ -103,7 +103,7 @@ def test_duplicate_name():
 
     try:
         # Both set name to None
-        class _Config(ClassConfigBase):
+        class _Config(CCFG):
             class InnerConfig:
                 name = None
 

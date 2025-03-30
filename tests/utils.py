@@ -1,11 +1,11 @@
-from class_config import ClassConfigBase
+from src.ccfg import CCFG
 
 
-def mess_value(cls: ClassConfigBase):
-    """Set all values of ClassConfigBase to random numbers"""
+def mess_value(cls: CCFG):
+    """Set all values of CCFG to random numbers"""
     import random
 
-    config_list: list[ClassConfigBase] = [cls]
+    config_list: list[CCFG] = [cls]
     while config_list:
         config = config_list.pop()
         if config.is_leaf():
@@ -15,7 +15,7 @@ def mess_value(cls: ClassConfigBase):
         config_list.extend(config.inner_configs())
 
 
-def assert_config_dict_eq(cls: ClassConfigBase, dct: dict):
+def assert_config_dict_eq(cls: CCFG, dct: dict):
     """Verify that cls is equivalent to a specified dict"""
     assert cls.to_dict() == dct
     mess_value(cls)
@@ -23,7 +23,7 @@ def assert_config_dict_eq(cls: ClassConfigBase, dct: dict):
     assert cls.to_dict() == dct
 
 
-class ComplexConfig(ClassConfigBase):
+class ComplexConfig(CCFG):
     class ParallelNum:
         name = "Parallel Count"
         value = 2

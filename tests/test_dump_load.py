@@ -1,4 +1,4 @@
-from class_config import ClassConfigBase
+from src.ccfg import CCFG
 from utils import ComplexConfig, complex_dict, mess_value, assert_config_dict_eq
 
 
@@ -6,10 +6,10 @@ def test_determine_form_path():
     """Test if the priority of determining format and path is correct"""
 
     # Priority: path parameter > form parameter > class path parameter, default is json
-    class PathConfig(ClassConfigBase):
+    class PathConfig(CCFG):
         path = "config.json"
 
-    class NoPathConfig(ClassConfigBase):
+    class NoPathConfig(CCFG):
         pass
 
     assert PathConfig.determine_form_path(form="toml", path="config.yml") == (

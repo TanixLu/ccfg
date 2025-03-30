@@ -3,7 +3,7 @@ requires = ["setuptools>=68.0.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "class_config"
+name = "ccfg"
 version = "0.0.1"
 authors = [{ name = "Tanix", email = "tanixlu@foxmail.com" }]
 description = "A Python library for managing hierarchical configurations using a class-based approach."
@@ -19,4 +19,4 @@ requires-python = ">=3.6"
 dependencies = []
 
 [project.urls]
-Homepage = "https://github.com/TanixLu/class_config"
+Homepage = "https://github.com/TanixLu/ccfg"

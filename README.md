@@ -1,4 +1,4 @@
-# class_config
+# ccfg
 
 A Python library for managing hierarchical configurations using a class-based approach.
 
@@ -12,7 +12,7 @@ A Python library for managing hierarchical configurations using a class-based ap
 ## Installation
 
 ```bash
-pip install class_config
+pip install ccfg
 ```
 
 ## Usage Example
@@ -20,9 +20,9 @@ pip install class_config
 Below is a comprehensive example demonstrating the main features:
 
 ```python
-from class_config import ClassConfigBase
+from ccfg import CCFG
 
-class ApplicationConfig(ClassConfigBase):
+class ApplicationConfig(CCFG):
     # Custom path for file storage
     path = "configs/app_settings.json"
 
