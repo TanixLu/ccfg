@@ -5,6 +5,8 @@ A Python library for managing hierarchical configurations using a class-based ap
 ## Features
 
 - Define configuration hierarchies using Python classes
+- Access configuration hierarchically using dot notation, enabling IDE autocompletion
+- Access to non-existent paths returns None instead of raising errors
 - Automatically convert between configuration classes and dictionaries
 - Support for multiple serialization formats (JSON, TOML, YAML)
 - Simple file-based storage and retrieval
